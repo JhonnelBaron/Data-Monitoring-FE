@@ -1,8 +1,6 @@
 <template>
   <div class="home-page">
-    <LandingHeroSection />
-    <LandingStatsSection />
-  </div>
+    <LandingHeroSection />  </div>
 </template>
 
 <script setup>
