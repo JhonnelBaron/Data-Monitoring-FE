@@ -1,0 +1,45 @@
+/* Navbar container */
+.tesda-navbar {
+  display: flex;
+  justify-content: center;  /* centers nav-content */
+  align-items: center;
+  width: 100%;
+  background-color: #0038A8; /* TESDA blue */
+  padding: 0.5rem 1rem;
+  box-sizing: border-box;
+  position: sticky;          
+  top: 0;
+  z-index: 1000;
+}
+
+/* Inner container */
+.nav-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 1200px; /* keeps content centered */
+}
+
+/* Left section */
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+/* Logo styling */
+.logo {
+  height: 50px;
+  width: auto;
+  border-radius: 4px; 
+  background: none;   
+  padding: 0;         
+}
+
+/* Navbar text */
+.nav-title {
+  font-weight: bold;
+  font-size: 1.1rem;
+  color: #fff; /* white text for contrast with navbar */
+}
