@@ -5,5 +5,8 @@ export default defineNuxtConfig({
     css: [
     '~/assets/css/main.css',
     '~/assets/css/navbar.css'
-  ]
+  ],
+  modules: [
+    '@pinia/nuxt',
+  ],
 })

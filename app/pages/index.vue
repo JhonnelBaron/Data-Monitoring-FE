@@ -1,9 +1,12 @@
 <template>
   <div class="home-page">
-    <LandingHeroSection />  </div>
+    <LandingHeroSection ref="heroSectionRef" /> 
+
+    <FloatingSearch :mapRef="heroSectionRef?.mapRef" /> 
+  </div>
 </template>
 
 <script setup>
-// Nuxt auto-imports components from /components/landing
-// if you name them LandingHeroSection.vue, etc.
+import { ref } from 'vue'
+const heroSectionRef = ref(null)
 </script>

@@ -5,7 +5,7 @@
 </template>
 
 <script setup>
-import { onMounted, onUnmounted, shallowRef, ref } from 'vue'
+import { onMounted, onUnmounted, shallowRef } from 'vue'
 import { useHeroStore } from '@/stores/hero'
 
 const heroStore = useHeroStore()
@@ -18,9 +18,7 @@ const bgyLayer = shallowRef(null)
 const activeLayer = shallowRef(null)
 const activeProvince = shallowRef(null)
 const activeMuni = shallowRef(null)
-const searchMarker = shallowRef(null)
-const allRegionLayers = shallowRef({})
-const allSearchablePlaces = ref([]) // Dito natin i-store ang regions, provinces, etc.
+
 const phBounds = [
   [4.5, 116.8],
   [21.4, 110.0]
@@ -51,11 +49,7 @@ const resetView = () => {
   heroStore.resetToNational()
   activeProvince.value = null
   activeMuni.value = null
-// Tanggalin ang search marker kung meron
-  if (searchMarker.value && mapInstance.value) {
-    mapInstance.value.removeLayer(searchMarker.value)
-    searchMarker.value = null
-  }
+
   if (activeLayer.value) {
     activeLayer.value.setStyle(baseStyle)
     activeLayer.value = null
@@ -78,81 +72,12 @@ const resetView = () => {
     adjustMapLayout()
   }
 }
-const flyToLocation = async (coords, level, name) => {
-  if (!mapInstance.value || !coords) return
-  const L = await import('leaflet')
 
-  // 1. Linisin ang lumang marker
-  if (searchMarker.value) mapInstance.value.removeLayer(searchMarker.value)
-
-  // 2. OFFSET LOGIC (Eksaktong gaya ng click logic mo)
-  const width = window.innerWidth
-  const pushToRightOffset = width > 1024 ? width * 0.6 : 20
-  
-  // 3. GAWAN NG BOUNDS ANG COORDINATES
-  // Imbes na flyTo, gagamit tayo ng flyToBounds para gumana ang paddingTopLeft
-  const latLng = L.latLng(coords[0], coords[1])
-  // Gumawa ng napakaliit na area sa paligid ng point (approx 100 meters)
-  const pointBounds = latLng.toBounds(100) 
-
-  // 4. EXECUTE ZOOM WITH OFFSET
-  mapInstance.value.flyToBounds(pointBounds, {
-    paddingTopLeft: [pushToRightOffset, 50],
-    paddingBottomRight: [20, 20],
-    maxZoom: level === 'region' ? 8 : level === 'province' ? 10 : 13,
-    duration: 1.5
-  })
-
-  // 5. HIGHLIGHT / DATA BUILD
-  if (level === 'region') {
-    const target = name.toLowerCase()
-    const layer = allRegionLayers.value[target]
-    if (layer) {
-      // I-fire ang click para lumabas ang provinces at highlight
-      setTimeout(() => {
-        layer.fire('click')
-      }, 500)
-    }
-  } else {
-    // Para sa City/Province: Marker highlight
-    searchMarker.value = L.marker(coords).addTo(mapInstance.value)
-      .bindPopup(`<b>${name}</b><br>${level.toUpperCase()}`)
-      .openPopup()
-  }
-}
 // --- 3. EXPOSE (Dapat nasa top-level) ---
 defineExpose({
-  resetView,
-  flyToLocation,
-  allSearchablePlaces
+  resetView
 })
-// Idagdag ito sa itaas ng onMounted
-const loadProvincesForSearch = async (psgc, regionName, L) => {
-  try {
-    const data = await fetch(`/geojson/regions/provdists-region-${psgc}.0.001.json`).then(r => r.json())
-    
-    data.features.forEach(feature => {
-      // Magdagdag ng fallback checks para sa pangalan
-      const provinceName = feature.properties.adm2_en || 
-                           feature.properties.name || 
-                           feature.properties.ADM2_EN; // Minsan uppercase sa ibang GeoJSON
 
-      if (provinceName) { // MAG-PUSH LANG KUNG MAY PANGALAN
-        const tempLayer = L.geoJSON(feature)
-        const center = tempLayer.getBounds().getCenter()
-
-        allSearchablePlaces.value.push({
-          category: 'Province',
-          name: provinceName,
-          area: regionName,
-          coords: [center.lat, center.lng]
-        })
-      }
-    })
-  } catch (e) {
-    console.warn(`Background load failed for Region PSGC: ${psgc}`, e)
-  }
-}
 // --- 4. LIFECYCLE HOOKS ---
 
 onMounted(async () => {
@@ -200,16 +125,6 @@ onMounted(async () => {
     onEachFeature: (feature, layer) => {
       const regionName = feature.properties.adm1_en
       const regionPSGC = String(feature.properties.adm1_psgc).replace(/^0+/, '')
-      allSearchablePlaces.value.push({
-        category: 'Region',
-        name: regionName,
-        area: 'Philippines',
-        coords: [layer.getBounds().getCenter().lat, layer.getBounds().getCenter().lng]
-      })
-
-      loadProvincesForSearch(regionPSGC, regionName, L)
-      allRegionLayers.value[regionName.toLowerCase()] = layer
-
 
       layer.on('mouseover', () => {
         if (layer !== activeLayer.value) {
@@ -226,9 +141,6 @@ onMounted(async () => {
 
       layer.on('click', async (e) => {
         L.DomEvent.stopPropagation(e)
-        allSearchablePlaces.value = allSearchablePlaces.value.filter(p => 
-    p.category === 'Region' || p.category === 'Province'
-    )
         if (activeLayer.value) activeLayer.value.setStyle(baseStyle)
         
         heroStore.drillDown(regionName, 'region')
@@ -262,7 +174,6 @@ onMounted(async () => {
             },
             onEachFeature: (pFeature, pLayer) => {
               const provinceName = pFeature.properties.adm2_en || pFeature.properties.name
-
               const provincePSGC = String(pFeature.properties.adm2_psgc).replace(/^0+/, '')
               
               pLayer.bindTooltip(provinceName, { 

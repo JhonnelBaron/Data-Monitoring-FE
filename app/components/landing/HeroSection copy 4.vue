@@ -109,20 +109,6 @@ onMounted(() => {
     sourceStats.value = { ...heroStore.stats }
   }, 100)
 })
-watch(() => heroStore.searchTarget, (newCoords) => {
-  // Siguraduhin na may coordinates at may mapRef
-  if (newCoords && mapRef.value) {
-    // Sunurin ang pagkakasunod-sunod: coords, level, name
-    mapRef.value.flyToLocation(
-      newCoords, 
-      heroStore.currentLevel, 
-      heroStore.locationName
-    )
-  }
-})
-defineExpose({
-  mapRef // I-expose natin ito para makuha ng home-page
-})
 </script>
 
 <style scoped>
